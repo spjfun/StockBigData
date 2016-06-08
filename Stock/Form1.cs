@@ -70,12 +70,50 @@ namespace Stock
             string[] txt = hdc.DocumentNode.SelectSingleNode("./tr[2]").InnerText.Trim().Split('\n');
             int i = 0;
 
-            // 輸出資料 
+            // SQL Command 建立 
+            var SQLCommand = "INSERT INTO STOCKS (Date, No, Time, Price, Buy, Sell, Fluctuation, Number, ClosePrice, ";
+            SQLCommand += "OpenPrice, High, Low, StocksData ) VALUE ('" + DateTime.Now.ToString("yyyy/MM/dd") + "'";
+
+            
             foreach (HtmlNode nodeHeader in htnode)
             {
+                // 輸出資料 到 listBox
                 listBox1.Items.Add(txt[i].Trim());
+
+                //將 "加到投資組合" 這個字串過濾掉,其他的存入DB
+                SQLCommand += ", '" + txt[i].Trim().Replace("加到投資組合", "") + "'";
+
                 i++;
             }
+            SQLCommand += ")";
+            // SQL Command 結束
+
+            //---------------------------------------------------------------------------------------------------
+            var serverName = "127.0.0.1";
+            var uidName = "root";
+            var pwdName = "1234";
+            var databaseName = "BDS";
+            string connStr = String.Format("server={0};uid={1};pwd={2};database={3}",
+            serverName, uidName, pwdName, databaseName);
+            conn = new MySqlConnection(connStr);
+            try
+            {
+                conn.Open();
+
+                cmd = new MySqlCommand(SQLCommand, conn);
+                cmd.ExecuteNonQuery();
+
+
+                asyncResult = cmd.BeginExecuteNonQuery();
+                nextTime = 5;
+                //timer1.Enabled = true;
+                start = DateTime.Now;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Exception: " + ex.Message);
+            }
+
 
             //清除資料
             doc = null;
