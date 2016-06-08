@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,6 +16,12 @@ namespace Stock
 {
     public partial class Form1 : Form
     {
+        private MySqlConnection conn;
+        private MySqlCommand cmd;
+        private int nextTime;
+        private IAsyncResult asyncResult;
+        private DateTime start;
+
         public Form1()
         {
             InitializeComponent();
@@ -75,6 +82,49 @@ namespace Stock
             hdc = null;
             url = null;
             ms.Close();
+        }
+
+        //連線MariaDB
+        private void button2_Click(object sender, EventArgs e)
+        {
+            //---------------------------------------------------------------------------------------------------
+            // 伺服器名稱
+            var serverName = "10.10.10.101";
+            // 帳號
+            var uidName = "root";
+            // 密碼
+            var pwdName = "1234";
+            // 資料庫
+            var databaseName = "BDS";
+            // 連線字串
+            string connStr = String.Format("server={0};uid={1};pwd={2};database={3}",
+            serverName, uidName, pwdName, databaseName);
+
+            conn = new MySqlConnection(connStr);
+            try
+            {
+                // 開啟連線
+                conn.Open();
+
+                // SQL Command
+                string sql = "SELECT * FROM STOCKS2 ";
+                cmd = new MySqlCommand(sql, conn);
+                // 執行SQL 
+                cmd.ExecuteNonQuery();
+
+                asyncResult = cmd.BeginExecuteNonQuery();
+                nextTime = 5;
+                start = DateTime.Now;
+            }
+            catch (Exception ex)
+            {
+                // 錯誤訊息丟出 
+                MessageBox.Show("Exception: " + ex.Message);
+            }
+
+            // 如果連線還沒關閉, 關閉它 
+            if (conn != null)
+                conn.Close();
         }
     }
 }
