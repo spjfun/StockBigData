@@ -23,10 +23,29 @@ namespace Stock
 
         private void button1_Click_1(object sender, EventArgs e)
         {
+            GetData();
+        }
+
+        //每秒處理, 當遇到 13:30:00, 執行getdata()
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            var strTime = DateTime.Now.Hour.ToString("00") + DateTime.Now.Minute.ToString("00") + DateTime.Now.Second.ToString("00");
+
+            switch (strTime)
+            {
+                case "142400":
+                    GetData();
+                    break;
+            }
+        }
+
+        //取得爬蟲指定抓取資料
+        public void GetData()
+        {
             //指定來源網頁
             WebClient url = new WebClient();
             MemoryStream ms = new MemoryStream(url.DownloadData("http://tw.stock.yahoo.com/q/q?s=2317"));
-            //以奇摩股市為例http://tw.stock.yahoo.com //2330 表示為股票代碼);
+            //以奇摩股市為例http://tw.stock.yahoo.com //2317 表示為股票代碼);
 
             // 使用預設編碼讀入 HTML 
             HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
