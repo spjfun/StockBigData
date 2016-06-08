@@ -85,11 +85,11 @@ namespace Stock
         }
 
         //連線MariaDB
-        private void button2_Click(object sender, EventArgs e)
+        private void button2_Click_1(object sender, EventArgs e)
         {
             //---------------------------------------------------------------------------------------------------
             // 伺服器名稱
-            var serverName = "10.10.10.101";
+            var serverName = "127.0.0.1";
             // 帳號
             var uidName = "root";
             // 密碼
@@ -101,14 +101,17 @@ namespace Stock
             serverName, uidName, pwdName, databaseName);
 
             conn = new MySqlConnection(connStr);
+            //conn = new MySqlConnection("Server=localhost;Database=BDS;Uid=root;Pwd=1234;");
+
             try
             {
                 // 開啟連線
                 conn.Open();
 
                 // SQL Command
-                string sql = "SELECT * FROM STOCKS2 ";
+                string sql = "SELECT * FROM STOCKS";
                 cmd = new MySqlCommand(sql, conn);
+
                 // 執行SQL 
                 cmd.ExecuteNonQuery();
 
@@ -125,6 +128,7 @@ namespace Stock
             // 如果連線還沒關閉, 關閉它 
             if (conn != null)
                 conn.Close();
+
         }
     }
 }
