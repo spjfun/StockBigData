@@ -178,5 +178,75 @@ namespace Stock
                 conn.Close();
 
         }
+
+        //載入股票代碼
+        private void button3_Click(object sender, EventArgs e)
+        {
+            LoadStocksCode();
+        }
+
+        //資料庫讀取資料
+        private void LoadStocksCode()
+        {
+            var serverName = "127.0.0.1";
+            var uidName = "root";
+            var pwdName = "1234";
+            var databaseName = "BDS";
+
+            // 連線字串
+            string connStr = String.Format("server={0};uid={1};pwd={2};database={3}",
+            serverName, uidName, pwdName, databaseName);
+
+            try
+            {
+                conn = new MySqlConnection(connStr);
+
+                // 開啟連線
+                conn.Open();
+
+                GetDatabases();
+            }
+            catch (MySqlException ex)
+            {
+                MessageBox.Show("Error connecting to the server: " + ex.Message);
+            }
+
+
+        }
+
+        //資料庫讀取股票代碼
+        private void GetDatabases()
+        {
+            MySqlDataReader reader = null;
+
+            // SQL Command
+            MySqlCommand cmd = new MySqlCommand("SELECT * FROM STOCKSCODE", conn);
+
+            try
+            {
+                // 執行SQL 
+                reader = cmd.ExecuteReader();
+
+                listBox2.Items.Clear();
+                while (reader.Read())
+                {
+                    listBox2.Items.Add(reader.GetString(0));
+                }
+
+            }
+            catch (MySqlException ex)
+            {
+                // 錯誤訊息丟出 
+                MessageBox.Show("Failed to populate database list: " + ex.Message);
+            }
+            finally
+            {
+                // 如果連線還沒關閉, 關閉它 
+                if (reader != null) reader.Close();
+            }
+        }
+
+
+
     }
 }
