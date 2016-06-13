@@ -25,6 +25,10 @@ namespace Stock
         public Form1()
         {
             InitializeComponent();
+
+            //抓取多個股票資料
+            listBox2.Items.Add("2330");
+            listBox2.Items.Add("2303");
         }
 
 
@@ -51,75 +55,81 @@ namespace Stock
         {
             //指定來源網頁
             WebClient url = new WebClient();
-            MemoryStream ms = new MemoryStream(url.DownloadData("http://tw.stock.yahoo.com/q/q?s=2317"));
-            //以奇摩股市為例http://tw.stock.yahoo.com //2317 表示為股票代碼);
+            MemoryStream ms = new MemoryStream();
 
-            // 使用預設編碼讀入 HTML 
-            HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
-            doc.Load(ms, Encoding.Default);
-
-            // 裝載第一層查詢結果 
-            HtmlAgilityPack.HtmlDocument hdc = new HtmlAgilityPack.HtmlDocument();
-
-            //XPath 來解讀它 /html[1]/body[1]/center[1]/table[2]/tr[1]/td[1]/table[1] 
-            hdc.LoadHtml(doc.DocumentNode.SelectSingleNode("/html[1]/body[1]/center[1]/table[2]/tr[1]/td[1]/table[1]").InnerHtml);
-
-            // 取得個股標頭 
-            HtmlNodeCollection htnode = hdc.DocumentNode.SelectNodes("./tr[1]/th");
-            // 取得個股數值 
-            string[] txt = hdc.DocumentNode.SelectSingleNode("./tr[2]").InnerText.Trim().Split('\n');
-            int i = 0;
-
-            // SQL Command 建立 
-            var SQLCommand = "INSERT INTO STOCKS (Date, No, Time, Price, Buy, Sell, Fluctuation, Number, ClosePrice, ";
-            SQLCommand += "OpenPrice, High, Low, StocksData ) VALUE ('" + DateTime.Now.ToString("yyyy/MM/dd") + "'";
-
-            
-            foreach (HtmlNode nodeHeader in htnode)
+            //抓取多個股票資料
+            for (int j = 0; j < listBox2.Items.Count; j++)
             {
-                // 輸出資料 到 listBox
-                listBox1.Items.Add(txt[i].Trim());
+                //將網頁來源資料暫存到記憶體內
+                ms = new MemoryStream(url.DownloadData("http://tw.stock.yahoo.com/q/q?s=" + listBox2.Items[j].ToString()));
 
-                //將 "加到投資組合" 這個字串過濾掉,其他的存入DB
-                SQLCommand += ", '" + txt[i].Trim().Replace("加到投資組合", "") + "'";
+                // 使用預設編碼讀入 HTML 
+                HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
+                doc.Load(ms, Encoding.Default);
 
-                i++;
+                // 裝載第一層查詢結果 
+                HtmlAgilityPack.HtmlDocument hdc = new HtmlAgilityPack.HtmlDocument();
+
+                //XPath 來解讀它 /html[1]/body[1]/center[1]/table[2]/tr[1]/td[1]/table[1] 
+                hdc.LoadHtml(doc.DocumentNode.SelectSingleNode("/html[1]/body[1]/center[1]/table[2]/tr[1]/td[1]/table[1]").InnerHtml);
+
+                // 取得個股標頭 
+                HtmlNodeCollection htnode = hdc.DocumentNode.SelectNodes("./tr[1]/th");
+                // 取得個股數值 
+                string[] txt = hdc.DocumentNode.SelectSingleNode("./tr[2]").InnerText.Trim().Split('\n');
+                int i = 0;
+
+                // SQL Command 建立 
+                var SQLCommand = "INSERT INTO STOCKS (Date, No, Time, Price, Buy, Sell, Fluctuation, Number, ClosePrice, ";
+                SQLCommand += "OpenPrice, High, Low, StocksData ) VALUE ('" + DateTime.Now.ToString("yyyy/MM/dd") + "'";
+
+
+                foreach (HtmlNode nodeHeader in htnode)
+                {
+                    // 輸出資料 到 listBox
+                    listBox1.Items.Add(nodeHeader.InnerText + ":" + txt[i].Trim().Replace("加到投資組合", "") + "");
+
+                    //將 "加到投資組合" 這個字串過濾掉,其他的存入DB
+                    SQLCommand += ", '" + txt[i].Trim().Replace("加到投資組合", "") + "'";
+
+                    i++;
+                }
+                SQLCommand += ")";
+                // SQL Command 結束
+
+                var serverName = "127.0.0.1";
+                var uidName = "root";
+                var pwdName = "1234";
+                var databaseName = "BDS";
+                string connStr = String.Format("server={0};uid={1};pwd={2};database={3}",
+                serverName, uidName, pwdName, databaseName);
+                conn = new MySqlConnection(connStr);
+                try
+                {
+                    conn.Open();
+
+                    cmd = new MySqlCommand(SQLCommand, conn);
+                    cmd.ExecuteNonQuery();
+
+                    asyncResult = cmd.BeginExecuteNonQuery();
+                    nextTime = 5;
+                    //timer1.Enabled = true;
+                    start = DateTime.Now;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Exception: " + ex.Message);
+                }
             }
-            SQLCommand += ")";
-            // SQL Command 結束
 
-            //---------------------------------------------------------------------------------------------------
-            var serverName = "127.0.0.1";
-            var uidName = "root";
-            var pwdName = "1234";
-            var databaseName = "BDS";
-            string connStr = String.Format("server={0};uid={1};pwd={2};database={3}",
-            serverName, uidName, pwdName, databaseName);
-            conn = new MySqlConnection(connStr);
-            try
-            {
-                conn.Open();
-
-                cmd = new MySqlCommand(SQLCommand, conn);
-                cmd.ExecuteNonQuery();
-
-
-                asyncResult = cmd.BeginExecuteNonQuery();
-                nextTime = 5;
-                //timer1.Enabled = true;
-                start = DateTime.Now;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Exception: " + ex.Message);
-            }
-
+            url = null;
+            ms = null;
 
             //清除資料
-            doc = null;
-            hdc = null;
-            url = null;
-            ms.Close();
+            //doc = null;
+            //hdc = null;
+            //url = null;
+            //ms.Close();
         }
 
         //連線MariaDB
