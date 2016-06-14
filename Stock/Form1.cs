@@ -246,6 +246,108 @@ namespace Stock
             }
         }
 
+        private void button4_Click(object sender, EventArgs e)
+        {
+            GetData2();
+        }
+
+
+        //取得爬蟲指定抓取資料
+        //清空truncate table stockscode
+        public void GetData2()
+        {
+            //指定來源網頁
+            WebClient url = new WebClient();
+            MemoryStream ms = new MemoryStream();
+
+
+            //將網頁來源資料暫存到記憶體內
+            ms = new MemoryStream(url.DownloadData("http://94im.com/thread-14545-1-1.html"));
+
+            // 使用UTF8編碼讀入 HTML 
+            HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
+            doc.Load(ms, Encoding.UTF8);
+
+            // 裝載第一層查詢結果 
+            HtmlAgilityPack.HtmlDocument hdc = new HtmlAgilityPack.HtmlDocument();
+
+            hdc.LoadHtml(doc.DocumentNode.SelectSingleNode("//table[@class='t_table'][1]").InnerHtml);
+
+            var trlength = doc.DocumentNode.SelectNodes("//table[@class='t_table'][1]/tr").Count;
+
+
+            List<HtmlNode> trlist = doc.DocumentNode.SelectNodes("//table[@class='t_table'][1]").Elements("tr").ToList();
+
+            var sqlcmd = "INSERT INTO stockscode (Code, Name) VALUES ";
+
+            for (int indextr = 1; indextr < trlist.Count; indextr++)
+            {
+                List<HtmlNode> s = trlist[indextr].Elements("td").ToList();
+
+                var code = s[0].InnerText.Trim();
+                var name = s[1].InnerText.Trim();
+
+                if (indextr == trlength - 1)
+                {
+                    Console.WriteLine("indextr == trlength - 1");
+                    Console.WriteLine(" code：" + code);
+                    sqlcmd += "(" + code;
+                    sqlcmd += ",'" + name + "');";
+                    break;
+                }
+                else {
+                    sqlcmd += "(" + code;
+                    sqlcmd += ",'" + name + "'),";
+                }
+
+                Console.WriteLine(" indextr：" + indextr);
+            }
+
+            runsqlcmd(sqlcmd);
+
+            Console.WriteLine("runsqlcmd(sqlcmd)");
+
+            url = null;
+            ms = null;
+
+            //清除資料
+            //doc = null;
+            //hdc = null;
+            //url = null;
+            //ms.Close();
+
+        }
+
+        public void runsqlcmd(string sqlcmd)
+        {
+            var serverName = "127.0.0.1";
+            var uidName = "root";
+            var pwdName = "1234";
+            var databaseName = "BDS";
+            string connStr = String.Format("server={0};uid={1};pwd={2};database={3}",
+            serverName, uidName, pwdName, databaseName);
+            conn = new MySqlConnection(connStr);
+            try
+            {
+                conn.Open();
+                cmd = new MySqlCommand(sqlcmd, conn);
+                cmd.ExecuteNonQuery();
+
+                asyncResult = cmd.BeginExecuteNonQuery();
+                nextTime = 5;
+                //timer1.Enabled = true;
+                start = DateTime.Now;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Exception: " + ex.Message);
+            }
+            finally
+            {
+                if (conn != null) conn.Close();
+            }
+
+        }
 
 
     }
